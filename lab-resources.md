@@ -4,10 +4,10 @@
 - Terraform downloads page: https://www.terraform.io/downloads.html
 
 ## Commands
-- wmic os get osarchitecture\
+- *wmic os get osarchitecture* \
 Run this command in Windows Command Prompt if you are not sure of the architecture of your Windows OS (32 vs 64 bits)
 
-- setx PATH "%PATH%;C:\terraform" /M \
+- *setx PATH "%PATH%;C:\terraform" /M* \
 Remember to update the C:\terraform path to the correct path where your executable is located
 
 
