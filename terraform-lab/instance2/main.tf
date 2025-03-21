@@ -1,11 +1,11 @@
 # Configure the terraform AWS Provider
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 }
 
 # Create a new VPC
 resource "aws_vpc" "my_vpc" {
-  cidr_block           = "10.0.0.0/24"
+  cidr_block           = var.vpc_cidr_block
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
@@ -15,14 +15,12 @@ resource "aws_vpc" "my_vpc" {
 
 # Create a new subnet
 resource "aws_subnet" "my_subnet" {
-  vpc_id = aws_vpc.my_vpc.id
-  # A /27 CIDR block provides 30 IP Addresses
-  cidr_block        = "10.0.0.0/27"
-  availability_zone = "us-east-1a"
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = var.subnet_cidr_block
+  availability_zone = var.availability_zone
 
   # Ensure instances get a public IP
   map_public_ip_on_launch = true
-
   tags = {
     Name = "my-subnet"
   }
@@ -56,7 +54,7 @@ resource "aws_route_table_association" "my_route_table_assoc" {
 
 # Create Security Group
 resource "aws_security_group" "web_sg" {
-  name        = "web_sg"
+  name        = var.sg_name
   description = "Allow HTTP and SSH traffic"
   vpc_id      = aws_vpc.my_vpc.id
 
@@ -64,7 +62,7 @@ resource "aws_security_group" "web_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow HTTP traffic
+    cidr_blocks = ["0.0.0.0/0"] # Allow HTTP
   }
 
   ingress {
@@ -84,17 +82,16 @@ resource "aws_security_group" "web_sg" {
   }
 
   tags = {
-    Name = "web-sg"
+    Name = var.sg_name
   }
 }
 
 # Launch EC2 Instance with Apache
 resource "aws_instance" "web_server" {
-  ami                    = "ami-0c02fb55956c7d316" # Amazon Linux 2 AMI
-  instance_type          = "t2.micro"              # Free-tier instance
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
   subnet_id              = aws_subnet.my_subnet.id # Launch in the new subnet
   vpc_security_group_ids = [aws_security_group.web_sg.id]
-
   # User Data Script to Install Apache
   user_data = <<-EOF
               #!/bin/bash
@@ -104,13 +101,12 @@ resource "aws_instance" "web_server" {
               sudo systemctl enable httpd
               echo "<h1>Hello from $(hostname -f)</h1>" > /var/www/html/index.html
               EOF
-
   tags = {
     Name = "Apache-Web-Server"
   }
 }
 
-# Output the Public IP Address of the Web Server
+# Output Public IP
 output "public_ip" {
   value = aws_instance.web_server.public_ip
 }
